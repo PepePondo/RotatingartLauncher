@@ -37,9 +37,12 @@ android {
 
     defaultConfig {
         applicationId = "com.app.ralaunch"
+        // PortHub build: installs next to the original app.
+        applicationIdSuffix = ".porthub"
         minSdk = 28
         targetSdk = 36
-        versionCode = 6
+        // PortHub release builds pass a rising version code so each one updates over the last.
+        versionCode = (findProperty("porthubVersionCode") as String?)?.toInt() ?: 6
         versionName = "2.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

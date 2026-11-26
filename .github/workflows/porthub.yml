@@ -1,0 +1,134 @@
+# PortHub build of Rotating Art Launcher.
+# - Every Monday (or when run by hand) merges the original project's changes into the porthub branch.
+#   If the PortHub patch no longer merges cleanly, it opens an issue instead.
+# - Builds a signed APK and publishes it as the latest release, which PortHub installs.
+name: PortHub
+
+on:
+  push:
+    branches:
+      - porthub
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: porthub
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  UPSTREAM: https://github.com/FireworkSky/RotatingartLauncher.git
+  UPSTREAM_BRANCH: main
+
+jobs:
+  sync:
+    name: Merge upstream
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.merge.outputs.changed }}
+    steps:
+      - name: Clone
+        uses: actions/checkout@v4
+        with:
+          ref: porthub
+          fetch-depth: 0
+
+      - name: Merge
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch "$UPSTREAM" "$UPSTREAM_BRANCH"
+          if git merge-base --is-ancestor FETCH_HEAD HEAD; then
+            echo "Already up to date with upstream."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git merge --no-edit -m "Merge upstream changes" FETCH_HEAD
+          git push origin HEAD:porthub
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Report a failed merge
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "Upstream changes no longer merge with the PortHub patch" \
+            --body "The weekly merge from $UPSTREAM ($UPSTREAM_BRANCH) failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. The last release keeps working; merge by hand to resume updates."
+
+  build:
+    name: Build and release
+    needs: sync
+    if: >-
+      always() && (github.event_name == 'push' ||
+      (needs.sync.result == 'success' &&
+      (needs.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch')))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone (LFS files cached between builds)
+        uses: actions/checkout@v4
+        with:
+          ref: porthub
+          submodules: recursive
+          lfs: false
+
+      - name: LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > "$RUNNER_TEMP/lfs-ids.txt"
+
+      - name: Cache LFS files
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.gitattributes') }}-${{ github.sha }}
+          restore-keys: |
+            lfs-${{ hashFiles('.gitattributes') }}-
+
+      - name: LFS pull
+        run: git lfs pull
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Android SDK packages
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-36" "build-tools;36.0.0" "ndk;28.0.13004108" "cmake;3.22.1" > /dev/null
+
+      - name: Build
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PORTHUB_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.PORTHUB_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PporthubVersionCode=$((1000 + GITHUB_RUN_NUMBER))
+          unsigned=$(find app/build/outputs/apk/release -name "*-unsigned.apk" | head -1)
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 --decode > "$RUNNER_TEMP/porthub.jks"
+          export PORTHUB_PW=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '\r\n')
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign --ks "$RUNNER_TEMP/porthub.jks" --ks-key-alias porthub \
+            --ks-pass env:PORTHUB_PW --key-pass env:PORTHUB_PW --out "$GITHUB_WORKSPACE/rotating-art-launcher-porthub.apk" "$unsigned"
+          rm -f "$RUNNER_TEMP/porthub.jks"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$GITHUB_WORKSPACE/rotating-art-launcher-porthub.apk"
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="porthub-$GITHUB_RUN_NUMBER"
+          gh release create "$tag" rotating-art-launcher-porthub.apk -R "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" --latest \
+            --title "Rotating Art Launcher for PortHub (build $GITHUB_RUN_NUMBER)" \
+            --notes "Rotating Art Launcher with PortHub's patch: adds the Celeste that PortHub copies (Internal storage/PortHub/Celeste (Linux)/Celeste.zip) by itself, without the + / file-picker step. Installs next to the original app as com.app.ralaunch.porthub. arm64. Built from $(git rev-parse --short HEAD)."

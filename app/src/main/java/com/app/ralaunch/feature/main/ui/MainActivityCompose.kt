@@ -203,6 +203,8 @@ class MainActivityCompose : BaseActivity() {
 
         ErrorHandler.init(this)
         resumePendingInstallIfPossible()
+        // PortHub: add the Celeste PortHub copied, without the + / file-picker step.
+        com.app.ralaunch.feature.installer.PortHubCelesteImport.maybeRun(this)
     }
 
     override fun onPause() {

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Rotating Art Launcher</string>
+    <string name="app_name">Rotating Art Launcher (PortHub)</string>
 
     <!-- Pantalla Principal -->
     <string name="main_no_game_selected">No hay juego seleccionado</string>
