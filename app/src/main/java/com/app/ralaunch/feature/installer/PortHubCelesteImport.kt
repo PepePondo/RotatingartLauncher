@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.app.ralaunch.core.di.contract.IGameRepositoryServiceV3
 import com.app.ralaunch.core.model.GameItem
+import com.app.ralaunch.core.platform.runtime.RuntimeSpec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +23,7 @@ import java.io.File
 object PortHubCelesteImport {
     private const val PREFS = "porthub"
     private const val KEY_DONE = "celeste_imported"
+    private const val KEY_MONO = "celeste_mono_set"
 
     /** One attempt per app process: an error isn't retried on every resume. */
     @Volatile private var attempted = false
@@ -31,11 +33,38 @@ object PortHubCelesteImport {
         return dir.listFiles()?.firstOrNull { it.isFile && it.name.equals("Celeste.zip", ignoreCase = true) }
     }
 
+    /**
+     * The original Celeste (not Everest) is a .NET Framework game that runs on the launcher's Mono engine;
+     * the global default, CoreCLR, can't start it ("libhostpolicy.so ... was not found").
+     */
+    private fun useMono(game: GameItem) {
+        if (game.gameId.equals("Celeste", ignoreCase = true) && game.dotNetRuntimeVersionOverride.isNullOrBlank()) {
+            game.dotNetRuntimeVersionOverride = RuntimeSpec.encodeMono()
+        }
+    }
+
+    /** Builds before this fix added Celeste without the Mono override: set it once. */
+    private fun fixRuntimeOfEarlierImport(activity: ComponentActivity, prefs: android.content.SharedPreferences) {
+        if (prefs.getBoolean(KEY_MONO, false)) return
+        val repo = GlobalContext.get().get<IGameRepositoryServiceV3>()
+        val games = repo.games.value
+        if (games.isEmpty()) return // not loaded yet; try on the next resume
+        prefs.edit().putBoolean(KEY_MONO, true).apply()
+        val index = games.indexOfFirst { it.gameId.equals("Celeste", true) && it.dotNetRuntimeVersionOverride.isNullOrBlank() }
+        if (index < 0) return
+        val game = games[index]
+        useMono(game)
+        activity.lifecycleScope.launch(Dispatchers.IO) { repo.upsert(game, index) }
+    }
+
     fun maybeRun(activity: ComponentActivity) {
         if (attempted) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) return
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (prefs.getBoolean(KEY_DONE, false)) return
+        if (prefs.getBoolean(KEY_DONE, false)) {
+            fixRuntimeOfEarlierImport(activity, prefs)
+            return
+        }
         val zip = zipFile() ?: return
         val repo = GlobalContext.get().get<IGameRepositoryServiceV3>()
         if (repo.games.value.any { it.gameId.equals("Celeste", true) || it.gameId.equals("Everest", true) }) {
@@ -50,8 +79,9 @@ object PortHubCelesteImport {
 
             override fun onComplete(gameItem: GameItem) {
                 activity.lifecycleScope.launch(Dispatchers.IO) {
+                    useMono(gameItem)
                     repo.upsert(gameItem, 0)
-                    prefs.edit().putBoolean(KEY_DONE, true).apply()
+                    prefs.edit().putBoolean(KEY_DONE, true).putBoolean(KEY_MONO, true).apply()
                     withContext(Dispatchers.Main) {
                         Toast.makeText(app, "Celeste added from PortHub.", Toast.LENGTH_LONG).show()
                     }
