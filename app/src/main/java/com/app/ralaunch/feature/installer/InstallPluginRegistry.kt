@@ -18,6 +18,8 @@ object InstallPluginRegistry {
         registerPlugin(TerrariaInstallPlugin())
         registerPlugin(SmapiInstallPlugin())
         registerPlugin(CelesteInstallPlugin())
+        // PortHub: any other FNA game (Axiom Verge, ...); last, so the dedicated plugins keep their games.
+        registerPlugin(com.app.ralaunch.feature.installer.plugins.PortHubFnaInstallPlugin())
     }
     
     /**

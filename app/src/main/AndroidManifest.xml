@@ -56,6 +56,12 @@
             </intent-filter>
         </activity>
         
+        <!-- PortHub: started by PortHub with a game's ZIP path; asks for All files access, then adds and launches it -->
+        <activity
+            android:name=".feature.installer.PortHubLaunchActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
         <!-- 主活动 (纯 Compose 版本) -->
         <activity
             android:name=".feature.main.ui.MainActivityCompose"

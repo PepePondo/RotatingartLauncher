@@ -205,6 +205,8 @@ class MainActivityCompose : BaseActivity() {
         resumePendingInstallIfPossible()
         // PortHub: add the Celeste PortHub copied, without the + / file-picker step.
         com.app.ralaunch.feature.installer.PortHubCelesteImport.maybeRun(this)
+        // PortHub: add (first time) and start the game PortHub launched this for.
+        com.app.ralaunch.feature.installer.PortHubGameLaunch.maybeRun(this)
     }
 
     override fun onPause() {

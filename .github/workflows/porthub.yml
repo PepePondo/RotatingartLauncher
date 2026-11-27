@@ -106,6 +106,12 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
             "platforms;android-36" "build-tools;36.0.0" "ndk;28.0.13004108" "cmake;3.22.1" > /dev/null
 
+      - name: Stand-in Steam API (porthub/steam-stub)
+        run: |
+          mkdir -p app/src/main/assets/porthub
+          "$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" \
+            -shared -fPIC -O2 -Wl,-soname,libsteam_api.so -o app/src/main/assets/porthub/libsteam_api.so porthub/steam-stub/steam_api_stub.c
+
       - name: Build
         env:
           KEYSTORE_BASE64: ${{ secrets.PORTHUB_KEYSTORE_BASE64 }}
