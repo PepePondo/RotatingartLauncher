@@ -14,6 +14,7 @@ import java.io.File
 object PortHubSteamStub {
     /** Sets the stand-in up for the game in [gameDir] when it needs it. Safe to call on every launch. */
     fun ensure(context: Context, gameDir: File) {
+        dropStartupSection(gameDir)
         val steamworks = File(gameDir, "Steamworks.NET.dll")
         if (!steamworks.isFile || !isVersion20(steamworks)) return
         val lib = File(File(context.filesDir, "porthub"), "libsteam_api.so")
@@ -33,6 +34,21 @@ object PortHubSteamStub {
         if (!config.isFile || config.readText() != wanted) config.writeText(wanted)
         // A copy next to the game can't be loaded from shared storage and only confuses things.
         File(gameDir, "libsteam_api.so").delete()
+    }
+
+    /**
+     * Windows .exe.config files carry a <startup\b> block (which .NET Framework to use). The launcher's Mono has no
+     * machine.config declaring it, so System.Configuration rejects the whole file and anything reading settings
+     * (log4net, XmlReader's resolver) fails. The block means nothing on Mono: drop it.
+     */
+    private fun dropStartupSection(gameDir: File) {
+        gameDir.listFiles { f -> f.name.endsWith(".exe.config", ignoreCase = true) }?.forEach { config ->
+            runCatching {
+                val text = config.readText()
+                val fixed = text.replace(Regex("<startup\b\b.*?</startup>|<startup\b\b[^>]*/>", RegexOption.DOT_MATCHES_ALL), "")
+                if (fixed != text) config.writeText(fixed)
+            }
+        }
     }
 
     /** AssemblyFileVersion is stored as UTF-16 text: look for "20." (the API the stand-in was generated from). */
