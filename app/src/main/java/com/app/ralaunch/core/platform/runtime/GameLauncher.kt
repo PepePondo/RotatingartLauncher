@@ -276,7 +276,6 @@ object GameLauncher {
             val workingDir = Path(assemblyPath).parent.toString()
             AppLog.d(TAG, "切换工作目录 / Changing working directory to: $workingDir")
             NativeMethods.chdir(workingDir)
-            NativeMethods.redirectStdioToLogcat()
             AppLog.d(TAG, "工作目录切换完成 / Working directory changed: OK")
 
             // 步骤4：准备数据目录

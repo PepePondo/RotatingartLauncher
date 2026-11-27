@@ -16,15 +16,8 @@ object NativeMethods {
     @JvmStatic
     fun chdir(path: String): Int = nativeChdir(path)
 
-    /** PortHub: copies the game's stdout/stderr into logcat (tag GameStdout). */
-    @JvmStatic
-    fun redirectStdioToLogcat(): Int = runCatching { nativeRedirectStdioToLogcat() }.getOrDefault(-1)
-
     // ==================== JNI ====================
 
     @JvmStatic
     private external fun nativeChdir(path: String): Int
-
-    @JvmStatic
-    private external fun nativeRedirectStdioToLogcat(): Int
 }

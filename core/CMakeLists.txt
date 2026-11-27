@@ -72,7 +72,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
         android
-        log
         SDL3::SDL3
         # RAL: 不要链接 FAudio/FNA3D —— libmain 不引用它们任何符号，但会因此写入
         # DT_NEEDED=libFAudio.so / libFNA3D.so；这两个文件名在包内刻意不存在
