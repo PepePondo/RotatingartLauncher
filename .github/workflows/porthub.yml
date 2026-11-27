@@ -112,15 +112,15 @@ jobs:
           "$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" \
             -shared -fPIC -O2 -Wl,-soname,libsteam_api.so -o app/src/main/assets/porthub/libsteam_api.so porthub/steam-stub/steam_api_stub.c
 
-      - name: Mono text encodings (I18N, from Ubuntu's Mono packages)
+      - name: Mono text encodings (I18N, from Debian's Mono packages)
         # Games that use legacy code pages (e.g. DotNetZip's CP437) need Mono's I18N assemblies, which the
         # launcher's trimmed BCL leaves out; MonoLauncher copies assets/bcl-extra into the BCL on launch.
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends libmono-i18n4.0-all > /dev/null
-          for n in I18N I18N.West I18N.Other I18N.CJK I18N.MidEast I18N.Rare; do
-            cp "$(find /usr/lib/mono -path '*4.5*' -name "$n.dll" | head -1)" app/src/main/assets/bcl-extra/
-          done
+          docker run --rm -v "$PWD/app/src/main/assets/bcl-extra:/out" debian:bookworm-slim sh -c '
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends libmono-i18n4.0-all > /dev/null &&
+            for n in I18N I18N.West I18N.Other I18N.CJK I18N.MidEast I18N.Rare; do
+              cp "$(find /usr/lib/mono -path "*4.5*" -name "$n.dll" | head -1)" /out/ || exit 1
+            done'
           ls -la app/src/main/assets/bcl-extra
 
       - name: Build
