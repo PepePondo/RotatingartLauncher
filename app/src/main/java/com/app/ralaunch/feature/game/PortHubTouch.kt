@@ -25,9 +25,10 @@ object PortHubTouch {
     private const val KEY_PACK = "controller_pack_id"
 
     fun isPortHubGame(activity: Activity): Boolean {
-        val id = activity.intent?.getStringExtra("GAME_ID").orEmpty()
+        // Games are usually started by storage id (the game's folder name, "PortHub_<Game>_<hash>").
+        val extras = listOf("GAME_STORAGE_ID", "GAME_ID").map { activity.intent?.getStringExtra(it).orEmpty() }
         val exe = activity.intent?.getStringExtra("GAME_EXE_PATH").orEmpty()
-        return id.startsWith("PortHub_") || exe.contains("/PortHub_")
+        return extras.any { it.startsWith("PortHub_") } || exe.contains("/PortHub_")
     }
 
     /** Installs and picks the PortHub controller layout when no layout is picked. */
