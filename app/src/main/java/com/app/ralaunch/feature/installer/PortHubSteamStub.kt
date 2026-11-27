@@ -45,7 +45,7 @@ object PortHubSteamStub {
         gameDir.listFiles { f -> f.name.endsWith(".exe.config", ignoreCase = true) }?.forEach { config ->
             runCatching {
                 val text = config.readText()
-                val fixed = text.replace(Regex("<startup\b\b.*?</startup>|<startup\b\b[^>]*/>", RegexOption.DOT_MATCHES_ALL), "")
+                val fixed = text.replace(Regex("""<startup\b.*?</startup>|<startup\b[^>]*/>""",RegexOption.DOT_MATCHES_ALL), "")
                 if (fixed != text) config.writeText(fixed)
             }
         }
