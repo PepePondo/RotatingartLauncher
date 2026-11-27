@@ -153,6 +153,7 @@ class GameActivitySdl2 : SDLActivity(), GameContract.View, LifecycleOwner, Saved
 
     // RAL 悬浮菜单（悬浮球）与虚拟按键：与 SDL3 的 GameActivity 完全一致
     private val virtualControlsManager = GameVirtualControlsManager()
+    private val portHubGame by lazy { com.app.ralaunch.feature.game.PortHubTouch.isPortHubGame(this) }
 
     private var fullscreenManager: GameFullscreenManager? = null
     private val refreshRateService: RefreshRateService by inject()
@@ -246,6 +247,7 @@ class GameActivitySdl2 : SDLActivity(), GameContract.View, LifecycleOwner, Saved
         touchDiagnostics.motion("activity-in", event, window.decorView) {
             "focus=${hasWindowFocus()} controls=${virtualControlsManager.controlLayout?.isControlsVisible}"
         }
+        if (portHubGame) com.app.ralaunch.feature.game.PortHubTouch.onInput(event, virtualControlsManager)
         val handled = super.dispatchTouchEvent(event)
         touchDiagnostics.motion("activity-out", event, window.decorView) { "handled=$handled" }
         return handled
@@ -310,7 +312,13 @@ class GameActivitySdl2 : SDLActivity(), GameContract.View, LifecycleOwner, Saved
 
 
     /** 返回键：切换悬浮球可见性（与 SDL3 路径一致），不退出游戏 */
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (portHubGame) com.app.ralaunch.feature.game.PortHubTouch.onInput(event, virtualControlsManager)
+        return super.dispatchGenericMotionEvent(event)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (portHubGame) com.app.ralaunch.feature.game.PortHubTouch.onInput(event, virtualControlsManager)
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 virtualControlsManager.toggleFloatingBall()

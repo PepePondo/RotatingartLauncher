@@ -80,10 +80,13 @@ class GameVirtualControlsManager {
             inputBridge = SDLInputBridge()
             onExitGameCallback = onExitGame
 
+            // PortHub: its games get a controller layout and show the controls in any touch mode (see PortHubTouch).
+            val portHubGame = PortHubTouch.isPortHubGame(activity)
+            if (portHubGame) PortHubTouch.ensureLayout(activity)
             controlLayout = ControlLayout(activity).apply {
                 this.inputBridge = this@GameVirtualControlsManager.inputBridge
                 loadLayoutFromPackManager()
-                isControlsVisible = SettingsAccess.touchInputMode == TouchInputMode.SDL
+                isControlsVisible = SettingsAccess.touchInputMode == TouchInputMode.SDL || portHubGame
             }
             disableClippingRecursive(controlLayout!!)
 
