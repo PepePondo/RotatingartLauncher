@@ -132,6 +132,8 @@ object MonoLauncher {
         } catch (e: Exception) {
             AppLog.e(TAG, "启动 Mono 程序集失败", e)
             -1
+        } finally {
+            copyGameOutputToLogs(File(monoRoot))
         }
     }
 
@@ -143,6 +145,21 @@ object MonoLauncher {
      * 把它映射到 libmono-native.so；缺失时 mono 会按字面去找 libSystem.Native.so
      * 并抛 DllNotFoundException。这里补上该配置，同时 APK 内也提供了同名库作为兜底。
      */
+    /**
+     * PortHub: the game's stdout/stderr (mono-stdout.log) and mono-crash.log live in private storage; copy them to
+     * the logs folder next to the launcher's own logs (Android/data/<package>/files/logs) so they can be read.
+     */
+    private fun copyGameOutputToLogs(monoRoot: File) {
+        runCatching {
+            val context: Context = KoinJavaComponent.get(Context::class.java)
+            val logs = File(context.getExternalFilesDir(null), "logs").apply { mkdirs() }
+            for (name in listOf("mono-stdout.log", "mono-crash.log")) {
+                val src = File(monoRoot, name)
+                if (src.isFile) src.copyTo(File(logs, name), overwrite = true)
+            }
+        }.onFailure { AppLog.w(TAG, "Couldn't copy the game's output to logs", it) }
+    }
+
     private fun ensureMonoDllMapConfig(monoRoot: File) {
         try {
             val configDir = File(monoRoot, "etc/mono")
