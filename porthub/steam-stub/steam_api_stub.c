@@ -851,7 +851,7 @@ EXPORT int64_t SteamAPI_ISteamUtils_IsOverlayEnabled(void) { return 0; }
 EXPORT int64_t SteamAPI_ISteamUtils_IsSteamChinaLauncher(void) { return 0; }
 EXPORT int64_t SteamAPI_ISteamUtils_IsSteamInBigPictureMode(void) { return 0; }
 EXPORT int64_t SteamAPI_ISteamUtils_IsSteamRunningInVR(void) { return 0; }
-EXPORT int64_t SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(void) { return 0; }
+EXPORT int64_t SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(void) { return 1; }
 EXPORT int64_t SteamAPI_ISteamUtils_IsVRHeadsetStreamingEnabled(void) { return 0; }
 EXPORT void SteamAPI_ISteamUtils_SetGameLauncherMode(void) { }
 EXPORT void SteamAPI_ISteamUtils_SetOverlayNotificationInset(void) { }

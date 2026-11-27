@@ -18,9 +18,11 @@ object PortHubSteamStub {
         val steamworks = File(gameDir, "Steamworks.NET.dll")
         if (!steamworks.isFile || !isVersion20(steamworks)) return
         val lib = File(File(context.filesDir, "porthub"), "libsteam_api.so")
-        if (!lib.isFile) {
+        // Refreshed whenever the bundled copy changes (a launcher update).
+        val bundled = context.assets.open("porthub/libsteam_api.so").use { it.readBytes() }
+        if (!lib.isFile || !lib.readBytes().contentEquals(bundled)) {
             lib.parentFile?.mkdirs()
-            context.assets.open("porthub/libsteam_api.so").use { input -> lib.outputStream().use { input.copyTo(it) } }
+            lib.writeBytes(bundled)
             lib.setReadable(true, false)
         }
         val config = File(gameDir, "Steamworks.NET.dll.config")

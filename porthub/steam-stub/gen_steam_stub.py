@@ -13,7 +13,8 @@ seen = {}
 for m in pat.finditer(code):
     entry = re.search(r'EntryPoint\s*=\s*"(\w+)"', m.group(1))
     seen.setdefault(entry.group(1) if entry else m.group(3), m.group(2))
-TRUE = {'SteamAPI_Init', 'SteamAPI_InitSafe', 'SteamAPI_IsSteamRunning'}
+# IsSteamRunningOnSteamDeck: PortHub runs games on handhelds; games treat a Deck as fullscreen + controller.
+TRUE = {'SteamAPI_Init', 'SteamAPI_InitSafe', 'SteamAPI_IsSteamRunning', 'SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck'}
 ONE = {'SteamAPI_GetHSteamPipe', 'SteamAPI_GetHSteamUser', 'SteamGameServer_GetHSteamPipe', 'SteamGameServer_GetHSteamUser'}
 FALSE_OVERRIDE = {'SteamAPI_RestartAppIfNecessary'}
 lines = [
