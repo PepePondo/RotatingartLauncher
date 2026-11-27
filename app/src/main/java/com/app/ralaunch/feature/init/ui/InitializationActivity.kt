@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import com.app.ralaunch.feature.init.model.InitStep
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -48,6 +50,14 @@ class InitializationActivity : ComponentActivity() {
 
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+
+            // PortHub: opened to start a game, so unpack the runtime straight away instead of waiting for the button.
+            val fromPortHub = remember { com.app.ralaunch.feature.installer.PortHubGameLaunch.hasPending(this@InitializationActivity) }
+            LaunchedEffect(uiState.step, uiState.hasPermissions, uiState.error) {
+                if (fromPortHub && uiState.step == InitStep.EXTRACTION && uiState.hasPermissions && uiState.error == null) {
+                    viewModel.startExtraction()
+                }
+            }
 
             LaunchedEffect(uiState.isComplete) {
                 if (uiState.isComplete) {

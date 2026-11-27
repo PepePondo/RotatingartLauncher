@@ -26,11 +26,20 @@ object PortHubGameLaunch {
 
     @Volatile private var running = false
 
+    /** True once PortHub has opened the launcher in this process: its own pop-ups (announcements, updates) wait. */
+    @Volatile var openedByPortHub = false
+        private set
+
+    /** PortHub has a game waiting (set before the first-run screens). */
+    fun hasPending(context: Context) =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PENDING, null) != null
+
     fun maybeRun(activity: ComponentActivity) {
         if (running) return
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val path = prefs.getString(KEY_PENDING, null) ?: return
         prefs.edit().remove(KEY_PENDING).apply()
+        openedByPortHub = true
         val zip = File(path)
         if (!zip.isFile) return
         running = true
@@ -57,6 +66,8 @@ object PortHubGameLaunch {
     }
 
     private fun start(activity: ComponentActivity, game: GameItem) {
+        // Games added before the stand-in Steam API was set up get it now.
+        game.gameExePathFull?.let { File(it).parentFile }?.let { runCatching { PortHubSteamStub.ensure(activity, it) } }
         if (!GameLaunchManager(activity).launchGame(game)) {
             Toast.makeText(activity, "Couldn't start ${game.displayedName}", Toast.LENGTH_LONG).show()
         }

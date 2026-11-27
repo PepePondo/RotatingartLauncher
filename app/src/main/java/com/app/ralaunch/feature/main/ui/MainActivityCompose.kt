@@ -817,7 +817,9 @@ class MainActivityCompose : BaseActivity() {
                 )
             }
 
-            if (!showMissingPermissionDialog && state.forceAnnouncement == null && updateDownloadUiState == null) {
+            // PortHub: when PortHub opened the launcher to start a game, announcements and update offers stay in their tabs.
+            val fromPortHub = com.app.ralaunch.feature.installer.PortHubGameLaunch.openedByPortHub
+            if (!fromPortHub && !showMissingPermissionDialog && state.forceAnnouncement == null && updateDownloadUiState == null) {
                 state.availableUpdate?.let { update ->
                     AppUpdateComposeDialog(
                         update = update,
@@ -838,7 +840,7 @@ class MainActivityCompose : BaseActivity() {
                 )
             }
 
-            if (!showMissingPermissionDialog && updateDownloadUiState == null) {
+            if (!fromPortHub && !showMissingPermissionDialog && updateDownloadUiState == null) {
                 state.forceAnnouncement?.let { announcement ->
                     ForceAnnouncementComposeDialog(
                         announcement = announcement,

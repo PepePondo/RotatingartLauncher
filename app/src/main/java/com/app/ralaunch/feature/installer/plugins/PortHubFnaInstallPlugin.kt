@@ -85,7 +85,7 @@ class PortHubFnaInstallPlugin : BaseInstallPlugin() {
                     .firstOrNull { it.isFile && it.name.equals(definition.launchTarget, true) }
                     ?: error("${definition.launchTarget} not found after unpacking")
                 val gameDir = exeFile.parentFile!!
-                installSteamStub(gameDir)
+                com.app.ralaunch.feature.installer.PortHubSteamStub.ensure(RaLaunchApp.getInstance(), gameDir)
                 val iconPath = extractIcon(gameDir, definition)
                 createGameInfo(gameDir, definition, iconPath)
                 val item = createGameItem(
@@ -105,21 +105,4 @@ class PortHubFnaInstallPlugin : BaseInstallPlugin() {
         }
     }
 
-    /**
-     * Steamworks.NET 20.x games stop when Steam doesn't start; this puts PortHub's stand-in Steam API next to
-     * the game, where Mono finds "steam_api" first. Other Steamworks versions keep their own behaviour.
-     */
-    private fun installSteamStub(gameDir: File) {
-        val steamworks = File(gameDir, "Steamworks.NET.dll")
-        if (!steamworks.isFile) return
-        val version = runCatching {
-            // AssemblyFileVersion is stored as UTF-16 text; 20.x is the API the stand-in was made from.
-            val bytes = steamworks.readBytes()
-            Regex("2\u00000\u0000\\.\u0000[0-9]").containsMatchIn(String(bytes, Charsets.ISO_8859_1))
-        }.getOrDefault(false)
-        if (!version) return
-        RaLaunchApp.getInstance().assets.open("porthub/libsteam_api.so").use { input ->
-            File(gameDir, "libsteam_api.so").outputStream().use { input.copyTo(it) }
-        }
-    }
 }
