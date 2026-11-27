@@ -13,7 +13,7 @@ import org.koin.java.KoinJavaComponent
 /**
  * PortHub: on-screen controls for the games PortHub adds (game ids "PortHub_…"), which play like controller games.
  *
- * - If no control layout is chosen yet, a "PortHub controller" layout (a virtual Xbox pad: stick, ABXY, shoulders,
+ * - If no control layout is chosen yet, a "PortHub controller" layout (a virtual Xbox pad: stick, d-pad, ABXY, shoulders,
  *   triggers, Start/Back) is installed and chosen, so controls appear without setting anything up. A layout the
  *   player chose or edited is left alone.
  * - The controls show for PortHub games whatever the touch mode, hide while a real controller (the handheld's own
